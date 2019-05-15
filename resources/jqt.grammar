@@ -1,8 +1,9 @@
-query = identity | obj-identifier
-identity = '.'
-obj-identifier = '.' (label | '[' quote-string ']' | quote-string)
+query = expression ( <ws> '|' <ws> expression)*
+expression = identity | obj-identifier
+identity = <'.'>
+obj-identifier = '.' (label | <'['> quote-string <']'> | quote-string)
 label = #'[a-zA-Z][a-zA-Z0-9]*'
 number = #'[0-9]+'
-quote-string = '"' quoted-string '"'
+<quote-string> = <'"'> quoted-string <'"'>
 quoted-string = #'([^\\]+\\\")*[^\"]*'
 ws = #'\s*'
