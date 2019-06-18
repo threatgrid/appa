@@ -1,15 +1,24 @@
 (ns appa.core
-  (:require [instaparse.core :as insta :refer [defparser] :include-macros true]))
+  (:require [instaparse.core :as insta :refer [defparser] :include-macros true]
+            [clojure.pprint :refer [pprint]]))
 
 (def grammar (slurp "resources/jqt.grammar"))
 
 (defparser jqt grammar)
 
+(defn to-long
+  [n]
+  (if (number? n)
+    n
+    #?(:clj (Long/parseLong n)
+       :cljs (js/parseInt n))))
+
 (defn ->path
   [[tag & args]]
   (if (= :identity tag)
     :identity
-    (into {:type tag} args)))
+    (do (println "tag: " tag " / args: " args)
+        (into {:type tag} args))))
 
 (defn ->expression
   [[[t & path] [vt [lt var-label]]]]
@@ -38,7 +47,7 @@
 (defn term->datalog
   "Return:  [Var [triples]]"
   [latest-var term]
-  (if-not latest-var  ;; no var means this is a top level query
+  (if-not latest-var ;; no var means this is a top level query
     (cond
       ;; . or [] both mean every top level entity
       (or (= :identity term) (= {:type :index-expression} term))
@@ -67,12 +76,13 @@
       ;; the only other option is an index term
       (= :index-expression (:type term))
       (if-let [n (:number term)]
-        (loop [i 0, tail latest-var, exp []]
-          (if (= i n)
-            (let [entry (gensym "?e")]
-              [entry (conj exp [tail :naga/value entry])])
-            (let [ntail (gensym "?l")]
-              (recur (inc i) ntail (conj exp [tail :naga/rest ntail])))))
+        (let [n (to-long n)]
+          (loop [i 0, tail latest-var, exp []]
+            (if (= i n)
+              (let [entry (gensym "?e")]
+                [entry (conj exp [tail :naga/value entry])])
+              (let [ntail (gensym "?l")]
+                (recur (inc i) ntail (conj exp [tail :naga/rest ntail]))))))
         (if-let [f (:quoted-string term)]
           ;; index by term
           (let [v (gensym "?v")
@@ -84,15 +94,38 @@
       (throw (ex-info "Unknown term" {:term term}))
       )))
 
+(defn rewrite-var
+  [nvar var statement]
+  (mapv #(if (= nvar %) var %) statement))
+
+(defn process-term
+  [latest-var {:keys [path variable] :as term}]
+  (let [[next-var datalog] (reduce (fn [[lv acc] e]
+                                     (concat acc (term->datalog lv e)))
+                                   [latest-var []]
+                                   path)]
+    ; (println "TERM=>>" datalog " [" next-var "]")
+    (if variable
+      (let [v (symbol (str \? variable))]
+        [v (map (partial rewrite-var next-var v) datalog)])
+      [next-var datalog])))
+
 (defn query-structure->datalog
   [query]
   (let [[_ dl] (reduce (fn [[latest-var datalog] term]
-                         (let [[v d] (term->datalog latest-var term)]
+                         ;(println "TERM: " term)
+                         (let [[v d] (process-term latest-var term)]
+                           ;(println "       ... " d)
                            [v (concat datalog d)]))
                        [nil []] query)]
     dl))
 
 (defn jq->graph-query
   [jq-text]
-  (let [jq (jq-text->structure jq-text)]
-    (query-structure->datalog jq)))
+  (try
+    (let [jq (jq-text->structure jq-text)]
+      (query-structure->datalog jq))
+    (catch Exception e
+      (println "ERROR: " (ex-message e))
+      (pprint (:term (ex-data e)))
+      (.printStackTrace e))))
