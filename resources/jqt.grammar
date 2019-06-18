@@ -5,8 +5,8 @@ path = root obj-identifier*
 pipe = <'|'>
 identity = <'.'>
 <obj-identifier> = (<'.'> label) | index-expression
-<index-expression> = <'['> index? <']'>
-index = number | quote-string | variable
+index-expression = <'['> index? <']'>
+<index> = number | quote-string | variable
 variable = <'$'> label
 label = #'[a-zA-Z_][a-zA-Z0-9_]*'
 
