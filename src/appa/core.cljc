@@ -15,15 +15,14 @@
 
 (defn ->path
   [[tag & args]]
-  (if (= :identity tag)
-    :identity
-    (do (println "tag: " tag " / args: " args)
-        (into {:type tag} args))))
+  (case tag
+    :identity :identity
+    :label {:type :label :value (first args)}
+    (into {:type tag} args)))
 
 (defn ->expression
   [[[t & path] [vt [lt var-label]]]]
   (assert (= t :path))
-  (println "making an expression: " path)
   (let [exp {:path (mapv ->path path)}]
     (if var-label
       (do
@@ -89,6 +88,11 @@
                 f' (gensym "?v")]
             [v [[v (keyword f) f']]])
           (throw (ex-info "Unknown index type" {:term term}))))
+
+      (= :label (:type term))
+      (let [v (gensym "?v")
+            property (keyword (:value term))]
+        [v [[latest-var property v]]])
       
       :default
       (throw (ex-info "Unknown term" {:term term}))
@@ -101,10 +105,10 @@
 (defn process-term
   [latest-var {:keys [path variable] :as term}]
   (let [[next-var datalog] (reduce (fn [[lv acc] e]
-                                     (concat acc (term->datalog lv e)))
+                                     (let [[nv d] (term->datalog lv e)]
+                                       [nv (concat acc d)]))
                                    [latest-var []]
                                    path)]
-    ; (println "TERM=>>" datalog " [" next-var "]")
     (if variable
       (let [v (symbol (str \? variable))]
         [v (map (partial rewrite-var next-var v) datalog)])
@@ -112,13 +116,11 @@
 
 (defn query-structure->datalog
   [query]
-  (let [[_ dl] (reduce (fn [[latest-var datalog] term]
-                         ;(println "TERM: " term)
+  (let [[selected dl] (reduce (fn [[latest-var datalog] term]
                          (let [[v d] (process-term latest-var term)]
-                           ;(println "       ... " d)
                            [v (concat datalog d)]))
                        [nil []] query)]
-    dl))
+    [selected dl]))
 
 (defn jq->graph-query
   [jq-text]
