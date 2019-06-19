@@ -77,7 +77,7 @@
       (if-let [n (:number term)]
         (let [n (to-long n)]
           (loop [i 0, tail latest-var, exp []]
-            (if (= i n)
+            (if (>= i n)
               (let [entry (gensym "?e")]
                 [entry (conj exp [tail :naga/value entry])])
               (let [ntail (gensym "?l")]
