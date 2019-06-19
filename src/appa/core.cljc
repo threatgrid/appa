@@ -62,7 +62,7 @@
           ;; index by term
           (let [v (gensym "?v")
                 f' (gensym "?v")]
-            [v [[v :naga/entity true] [v (keyword f) f']]])
+            [f' [[v :naga/entity true] [v (keyword f) f']]])
           (throw (ex-info "Unknown index type" {:term term}))))
       
       :default
@@ -95,8 +95,7 @@
         [v [[latest-var property v]]])
       
       :default
-      (throw (ex-info "Unknown term" {:term term}))
-      )))
+      (throw (ex-info "Unknown term" {:term term})))))
 
 (defn rewrite-var
   [nvar var statement]
