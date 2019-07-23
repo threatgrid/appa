@@ -4,7 +4,25 @@
             [naga.data :as data]
             [clojure.pprint :refer [pprint]]))
 
-(def grammar (slurp "resources/jqt.grammar"))
+;(def grammar (slurp "resources/jqt.grammar"))
+
+(def grammar
+"query = expression ( <ws> pipe <ws> expression)*
+expression = path [<ws> <'as'> <ws> variable]
+path = root? obj-identifier*
+<root> = identity | index-expression
+pipe = <'|'>
+identity = <'.'>
+<obj-identifier> = (<'.'> label) | index-expression
+index-expression = <'['> index? <']'>
+<index> = number | quote-string | variable
+variable = <'$'> label
+label = #'[a-zA-Z_][a-zA-Z0-9_]*'
+
+number = #'[0-9]+'
+<quote-string> = <'\"'> quoted-string <'\"'>
+quoted-string = #'([^\\\\]+\\\\\\\")*[^\\\"]*'
+ws = #'\\s*'")
 
 (defparser jqt grammar)
 
