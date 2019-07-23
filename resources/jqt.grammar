@@ -1,6 +1,6 @@
 query = expression ( <ws> pipe <ws> expression)*
 expression = path [<ws> <'as'> <ws> variable]
-path = root obj-identifier*
+path = root? obj-identifier*
 <root> = identity | index-expression
 pipe = <'|'>
 identity = <'.'>

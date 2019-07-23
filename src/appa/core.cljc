@@ -51,7 +51,7 @@
   "Parse a jq string into a query AST"
   [query-text]
   (let [[tag & query] (jqt query-text) ]
-    (assert (= tag :query))
+    (assert (= tag :query) (str "bad: tag=" tag "; query=" query))
     (keep query->structure query)))
 
 (defn term->datalog
@@ -78,7 +78,10 @@
           (throw (ex-info "Unknown index type" {:term term}))))
       
       :default
-      (throw (ex-info "Unknown root term" {:term term})))
+      (let [v (gensym "?v")
+            v2 (gensym "?v2")
+            property (keyword (:value term))]
+        [v2 [[v :naga/entity true] [v property v2]]]))
     (cond
       ;; . or [] both mean every top level entity
       (or (= :identity term) (= {:type :index-expression} term))
