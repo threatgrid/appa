@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [instaparse "1.4.10"]
                  [cheshire "5.8.1"]
-                 [org.clojars.quoll/asami "0.3.3"]]
+                 [org.clojars.quoll/asami "0.3.3"]
+                 [org.clojars.quoll/qtest "0.1.0"]]
   :repl-options {:init-ns appa.core}
   :resource-paths ["resources"])
