@@ -57,13 +57,19 @@
     (is (= gquery '{:find (?v22), :where ([?v1 :naga/entity true] [?v1 :foo ?v22])})))
 
   (let [gquery (with-fresh-gen (jq->graph-query "[] as $x | [0]"))]
-    (is (= gquery '{:find (?e2 "x"), :where ([?x :naga/entity true] [?x :naga/value ?e2])})))
+    (is (= gquery '{:find (?e2 "x"), :where ([?x :naga/entity true] [?x :naga/first ?e2])})))
 
   (let [gquery (with-fresh-gen (jq->graph-query "[] as $x | [1]"))]
-    (is (= gquery '{:find (?e3 "x"), :where ([?x :naga/entity true] [?x :naga/rest ?l2] [?l2 :naga/value ?e3])})))
+    (is (= gquery '{:find (?e3 "x"), :where ([?x :naga/entity true] [?x :naga/rest ?l2] [?l2 :naga/first ?e3])})))
 
   (let [gquery (with-fresh-gen (jq->graph-query "[\"a\"] as $x | [0]"))]
-    (is (= gquery '{:find (?e3 "x"), :where ([?v1 :naga/entity true] [?v1 :a ?x] [?x :naga/value ?e3])})))
+    (is (= gquery '{:find (?e3 "x"), :where ([?v1 :naga/entity true] [?v1 :a ?x] [?x :naga/first ?e3])})))
 
   (let [gquery (with-fresh-gen (jq->graph-query "[].foo[2] as $x | [0]"))]
-    (is (= gquery '{:find (?e6 "x"), :where ([?v1 :naga/entity true] [?v1 :foo ?v2] [?v2 :naga/rest ?l3] [?l3 :naga/rest ?l4] [?l4 :naga/value ?x] [?x :naga/value ?e6])}))))
+    (is (= gquery '{:find (?e6 "x"), :where ([?v1 :naga/entity true] [?v1 :foo ?v2] [?v2 :naga/rest ?l3] [?l3 :naga/rest ?l4] [?l4 :naga/first ?x] [?x :naga/first ?e6])})))
+
+  (let [gquery (with-fresh-gen (jq->graph-query "[].foo[].bar as $x | [0]"))]
+    (is (= gquery '{:find (?e5 "x"), :where ([?v1 :naga/entity true] [?v1 :foo ?v2] [?v2 :naga/contains ?l3] [?l3 :bar ?x] [?x :naga/first ?e5])})))
+
+  (let [gquery (with-fresh-gen (jq->graph-query "[][\"foo\"][].bar as $x | [0]"))]
+    (is (= gquery '{:find (?e5 "x"), :where ([?v1 :naga/entity true] [?v1 :foo ?v2] [?v2 :naga/contains ?l3] [?l3 :bar ?x] [?x :naga/first ?e5])}))))

@@ -101,8 +101,8 @@ ws = #'\\s*'")
             property (keyword (:value term))]
         [v2 [[v :naga/entity true] [v property v2]]]))
     (cond
-      ;; . or [] both mean every top level entity
-      (or (= :identity term) (= {:type :index-expression} term))
+      ;; . means every top level entity
+      (= :identity term)
       [latest-var []]
 
       ;; the only other option is an index term
@@ -112,15 +112,16 @@ ws = #'\\s*'")
           (loop [i 0, tail latest-var, exp []]
             (if (>= i n)
               (let [entry (gensym "?e")]
-                [entry (conj exp [tail :naga/value entry])])
+                [entry (conj exp [tail :naga/first entry])])
               (let [ntail (gensym "?l")]
                 (recur (inc i) ntail (conj exp [tail :naga/rest ntail]))))))
         (if-let [f (:quoted-string term)]
           ;; index by term
-          (let [v (gensym "?v")
-                f' (gensym "?v")]
-            [v [[v (keyword f) f']]])
-          (throw (ex-info "Unknown index type" {:term term}))))
+          (let [v (gensym "?v")]
+            [v [[latest-var (keyword f) v]]])
+          ;; [] means that all elements of the array are required
+          (let [v (gensym "?l")]
+            [v [[latest-var :naga/contains v]]])))
 
       (= :label (:type term))
       (let [v (gensym "?v")
@@ -178,7 +179,10 @@ ws = #'\\s*'")
 (defn load-objs
   "Retrieves a sequence of objects from a store"
   [store refs]
-  (map (partial data/id->json store) refs))
+  (letfn [(id->json [ref]
+            (let [o (data/id->json store ref)]
+              (if (seq o) o ref)))]
+    (map id->json refs)))
 
 (defn query-objects
   "Executes a jq query against a store, and returns a sequence of the resulting objects.
